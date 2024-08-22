@@ -1,7 +1,3 @@
-module BaseTTCross
-
-export InterpolatingCrosses, Grid
-
 mutable struct InterpolatingCrosses
     calI::Vector{Vector{Int}}
     calJ::Vector{Vector{Int}}
@@ -10,17 +6,17 @@ mutable struct InterpolatingCrosses
 
     # TODO Check if calI and calJ should have another nested dimension
     function InterpolatingCrosses(n_var::Int)
-        calI = Vector{Vector{Int}}(undef, n_var)
-        calJ = Vector{Vector{Int}}(undef, n_var)
+        calI = Vector{Vector{Vector{Float64}}}(undef, n_var)
+        calJ = Vector{Vector{Vector{Float64}}}(undef, n_var)
         cross_sizes = Vector{Int}(undef, n_var)
         for k in 1:n_var
-            calI[k] = Vector{Int}()
-            calJ[k] = Vector{Int}()
+            calI[k] = Vector{Vector{Float64}}()
+            calJ[k] = Vector{Vector{Float64}}()
         end
         new(calI, calJ, cross_sizes, n_var)
     end
 
-    function InterpolatingCrosses(calI::Vector{Vector{Int}}, calJ::Vector{Vector{Int}})
+    function InterpolatingCrosses(calI::Vector{Vector{Vector{Float64}}}, calJ::Vector{Vector{Vector{Float64}}})
         if length(calI) != length(calJ)
             throw(ArgumentError("calI and calJ must have the same length"))
         end
@@ -38,7 +34,7 @@ end
 
 struct Grid
     intervals::Vector{Vector{Float64}}
-    grid_points::Vector{Vector{Float64}}
+    points::Vector{Vector{Float64}}
     points_per_var::Vector{Int}
     n_var::Int
 
@@ -47,23 +43,23 @@ struct Grid
             throw(ArgumentError("intervals and points_per_var must have the same length"))
         end
         n_var = length(intervals)
-        grid_points = Vector{Vector{Float64}}(undef, n_var)
+        points = Vector{Vector{Float64}}(undef, n_var)
         for k in 1:n_var
-            grid_points[k] = collect(range(intervals[k][1], stop=intervals[k][2], length=points_per_var[k]))
+            points[k] = collect(range(intervals[k][1], stop=intervals[k][2], length=points_per_var[k]))
         end
-        new(intervals, grid_points, points_per_var, n_var)
+        new(intervals, points, points_per_var, n_var)
     end
 
-    function Grid(grid_points::Vector{Vector{Float64}})
-        n_var = length(grid_points)
+    function Grid(points::Vector{Vector{Float64}})
+        n_var = length(points)
         intervals = Vector{Vector{Float64}}(undef, n_var)
         points_per_var = Vector{Int}(undef, n_var)
         for k in 1:n_var
-            intervals[k] = [grid_points[k][1], grid_points[k][end]]
-            points_per_var[k] = length(grid_points[k])
+            intervals[k] = [points[k][1], points[k][end]]
+            points_per_var[k] = length(points[k])
         end
-        new(intervals, grid_points, points_per_var, n_var)
+        new(intervals, points, points_per_var, n_var)
     end
 end
-end
+
 
