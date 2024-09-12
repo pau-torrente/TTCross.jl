@@ -1,5 +1,6 @@
 using IterTools
 
+# TODO Move the CPU map to a separate function, leave these methods as generic and move the mapping to the seggregated corresponding functions
 function _cpu_2site_block(
     i_k_1::Vector{Vector{Float64}}, 
     s_k::Vector{Float64}, 
@@ -17,6 +18,7 @@ function _cpu_2site_block(
 
     combinations = product(i_k_1, s_k, s_kp1, j_kp1)
 
+    # THIS IS THE ONLY PART THAT DIFFERS FROM THE GPU IMPLEMENTATION
     results = map((x) -> func(x...), combinations)
 
     tensor = reshape(results, li, ls_k, ls_kp1, lj)
