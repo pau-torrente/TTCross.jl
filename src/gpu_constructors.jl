@@ -1,62 +1,22 @@
 using CUDA
 
-function _gpu_2site_block(
-    i_k_1::Vector{Vector{Float64}}, 
-    s_k::Vector{Float64}, 
-    s_kp1::Vector{Float64}, 
-    j_kp1::Vector{Vector{Float64}},
-    func::Function,
-)
-
+function tenconstr_kernel!(combinations::CuArray, out::CuArray, func::Function)
+    i = (blockIdx().x-1) * blockDim().x + threadIdx().x
+    if i <= size(combinations)[1]
+        out[i] = func(combinations[i, :])
+    end    
+    return nothing
 end
 
-function _gpu_2site_block(
-    s_k::Vector{Float64}, 
-    s_kp1::Vector{Float64}, 
-    j_kp1::Vector{Vector{Float64}},
-    func::Function,
-)
+function gpu_ten_constructor(combinations::CuArray, func::Function)::CuArray
+    output = CUDA.zeros(size(combinations[1]))
+    
+    kern = @cuda launch=false tenconstr_kernel!(combinations, output, func)
+    config = launch_configuration(kern.fun)
+    threads = min(length(a), config.threads)
+    blocks = cld(length(a), threads)
 
-end
+    kern(combinations, output, func; threads = threads, blocks = blocks)
 
-function _gpu_2site_block(
-    i_k_1::Vector{Vector{Float64}}, 
-    s_k::Vector{Float64}, 
-    s_kp1::Vector{Float64}, 
-    func::Function,
-)
-
-end
-
-function _gpu_1site_block(
-    i_k_1::Vector{Vector{Float64}},
-    s_k::Vector{Float64},
-    j_k::Vector{Float64},
-    func::Function,
-)
-
-end
-
-function _gpu_1site_block(
-    i_k_1::Vector{Vector{Float64}},
-    s_k::Vector{Float64},
-    func::Function,
-)
-
-end
-
-function _gpu_1site_block(
-    s_k::Vector{Float64},
-    j_k::Vector{Float64},
-    func::Function,
-)
-
-end
-
-function _gpu_inverse_block(
-    i_k::Vector{Vector{Float64}},
-    j_k::Vector{Vector{Float64}},
-    func::Function,
-)
-
+    return output  
 end
