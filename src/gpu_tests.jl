@@ -43,3 +43,19 @@ secs = @elapsed kern(cua, cub, cuc; threads=threads, blocks=blocks)
 println("GPU time: $secs seconds")
 
 @elapsed c = integrator.(a)
+
+include("ttcross.jl")
+using .TTcross
+
+l = [[1.0, 2.0], [3.0, 4.0]]
+s = [5.0, 6.0, 7.0]
+r = [[8.0, 9.0]]
+
+set_backend(:cpu)
+func(x::Vector{Float64}) = sum(x)
+
+tensor = one_site_block(l, s, r, func)
+
+set_backend(:gpu)
+
+tensor = one_site_block(l, s, r, func)

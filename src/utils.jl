@@ -79,3 +79,7 @@ function set_backend(new_backend::Symbol)
     end        
 end
 
+function check_backend()
+    return _backend
+end
+

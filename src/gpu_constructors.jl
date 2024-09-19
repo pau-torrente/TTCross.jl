@@ -1,15 +1,15 @@
 using CUDA
 
-function tenconstr_kernel!(combinations::CuArray, out::CuArray, func::Function)
+function tenconstr_kernel!(combinations::CuDeviceArray{Float64}, out::CuDeviceVector{Float64}, func::Function)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
     if i <= size(combinations)[1]
-        out[i] = func(combinations[i, :])
+        out[i] = func(combinations[:, i])
     end    
     return nothing
 end
 
 function gpu_ten_constructor(combinations::CuArray, func::Function)::CuArray
-    output = CUDA.zeros(size(combinations[1]))
+    output = CUDA.zeros(Float64, size(combinations)[1])
     
     kern = @cuda launch=false tenconstr_kernel!(combinations, output, func)
     config = launch_configuration(kern.fun)
