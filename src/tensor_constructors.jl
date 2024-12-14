@@ -1,30 +1,27 @@
-using IterTools
 using CUDA
+using SplitApplyCombine
 
-# TODO All functions could share the same name and leverage the multiple dispatch feature of Julia
+function product_to_cuarray(iterator::Base.Iterators.ProductIterator)
+    collected = combinedims(map(x -> vcat(x...), collect(iterator)))
+    shape = size(collected)
+    return cu(reshape(collected, (shape[1], reduce(*, shape[2:end])))), shape
+end
 
 function two_site_block(
-    i_k_1::Vector{Vector{Float64}}, 
+    i_k_1::Matrix{Float64}, 
     s_k::Vector{Float64}, 
     s_kp1::Vector{Float64}, 
-    j_kp1::Vector{Vector{Float64}},
+    j_kp1::Matrix{Float64},
     func::Function,
 )
-
-    li = length(i_k_1)
-    ls_k = length(s_k)
-    ls_kp1 = length(s_kp1)
-    lj = length(j_kp1)
-    
-    combinations = product(i_k_1, s_k, s_kp1, j_kp1)
+    combinations = Base.product(eachcol(i_k_1), s_k, s_kp1, eachcol(j_kp1))
 
     if _backend == :cpu
         tensor = map((x) -> func(vcat(x...)), combinations)
     elseif _backend == :gpu
-        resh_combinations = stack([vcat(a..., [b], [c], d...) for (a, b, c, d) in vec(collect(combinations))])
-        cu_combs = CuArray(resh_combinations)
-        results = Array(gpu_ten_constructor(cu_combs, func))
-        tensor = reshape(results, li, ls_k, ls_kp1, lj)
+        cu_combs, shape = product_to_cuarray(combinations)
+        array = Array(gpu_ten_constructor(cu_combs, func))
+        tensor = reshape(array, shape[2:end])
     end
 
     return tensor
@@ -33,137 +30,109 @@ end
 function two_site_block(
     s_k::Vector{Float64}, 
     s_kp1::Vector{Float64}, 
-    j_kp1::Vector{Vector{Float64}},
+    j_kp1::Matrix{Float64},
     func::Function,
 )
-
-    ls_k = length(s_k)
-    ls_kp1 = length(s_kp1)
-    lj = length(j_kp1)
-
-    combinations = product(i_k_1, s_k, s_kp1, j_kp1)
+    combinations = Base.product(s_k, s_kp1, eachcol(j_kp1))
 
     if _backend == :cpu
         tensor = map((x) -> func(vcat(x...)), combinations)
     elseif _backend == :gpu
-        resh_combinations = stack([vcat([a], [b], c...) for (a, b, c) in vec(collect(combinations))])
-        cu_combs = CuArray(resh_combinations)
-        results = Array(gpu_ten_constructor(cu_combs, func))
-        tensor = reshape(results, 1, ls_k, ls_kp1, lj)
+        cu_combs, shape = product_to_cuarray(combinations)
+        array = Array(gpu_ten_constructor(cu_combs, func))
+        tensor = reshape(array, shape[2:end])
     end
+
     return tensor
 end
 
 function two_site_block(
-    i_k_1::Vector{Vector{Float64}}, 
+    i_k_1::Matrix{Float64}, 
     s_k::Vector{Float64}, 
     s_kp1::Vector{Float64}, 
     func::Function,
 )
-
-    li = length(i_k_1)
-    ls_k = length(s_k)
-    ls_kp1 = length(s_kp1)
-
-    combinations = product(i_k_1, s_k, s_kp1)
+    combinations = Base.product(eachcol(i_k_1), s_k, s_kp1)
 
     if _backend == :cpu
         tensor = map((x) -> func(vcat(x...)), combinations)
     elseif _backend == :gpu
-        resh_combinations = stack([vcat(a..., [b], [c]) for (a, b, c) in vec(collect(combinations))])
-        cu_combs = CuArray(resh_combinations)
-        results = Array(gpu_ten_constructor(cu_combs, func))
-        tensor = reshape(results, li, ls_k, ls_kp1, 1)
+        cu_combs, shape = product_to_cuarray(combinations)
+        array = Array(gpu_ten_constructor(cu_combs, func))
+        tensor = reshape(array, shape[2:end])
     end
 
     return tensor
 end
 
 function one_site_block(
-    i_k_1::Vector{Vector{Float64}},
+    i_k_1::Matrix{Float64},
     s_k::Vector{Float64},
-    j_k::Vector{Vector{Float64}},
+    j_k::Matrix{Float64},
     func::Function,
 )
-    li = length(i_k_1)
-    ls_k = length(s_k)
-    lj = length(j_k)
-
-    combinations = product(i_k_1, s_k, j_k)
-
+    combinations = Base.product(eachcol(i_k_1), s_k, eachcol(j_k))
 
     if _backend == :cpu
         tensor = map((x) -> func(vcat(x...)), combinations)
     elseif _backend == :gpu
-        resh_combinations = stack([vcat(a..., [b], c...) for (a, b, c) in vec(collect(combinations))])
-        cu_combs = CuArray(resh_combinations)
-        results = Array(gpu_ten_constructor(cu_combs, func))
-        tensor = reshape(results, li, ls_k, lj)
+        cu_combs, shape = product_to_cuarray(combinations)
+        println(typeof(cu_combs))
+        array = Array(gpu_ten_constructor(cu_combs, func))
+        tensor = reshape(array, shape[2:end])
     end
 
     return tensor
 end
 
 function one_site_block(
-    i_k_1::Vector{Vector{Float64}},
+    i_k_1::Matrix{Float64},
     s_k::Vector{Float64},
     func::Function,
 )
-    li = length(i_k_1)
-    ls_k = length(s_k)
-
-    combinations = product(i_k_1, s_k)
+    combinations = Base.product(eachcol(i_k_1), s_k)
 
     if _backend == :cpu
         tensor = map((x) -> func(vcat(x...)), combinations)
     elseif _backend == :gpu
-        resh_combinations = stack([vcat(a..., [b]) for (a, b) in vec(collect(combinations))])
-        cu_combs = CuArray(resh_combinations)
-        results = Array(gpu_ten_constructor(cu_combs, func))
-        tensor = reshape(results, li, ls_k, 1)
+        cu_combs, shape = product_to_cuarray(combinations)
+        array = Array(gpu_ten_constructor(cu_combs, func))
+        tensor = reshape(array, shape[2:end])
     end
     return tensor
 end
 
 function one_site_block(
     s_k::Vector{Float64},
-    j_k::Vector{Vector{Float64}},
+    j_k::Matrix{Float64},
     func::Function,
 )
-    ls_k = length(s_k)
-    lj = length(j_k)
-
-    combinations = product(s_k, j_k)
+    combinations = Base.product(s_k, eachcol(j_k))
 
     if _backend == :cpu
         tensor = map((x) -> func(vcat(x...)), combinations)
     elseif _backend == :gpu
-        resh_combinations = stack([vcat([a], b...) for (a, b) in vec(collect(combinations))])
-        cu_combs = CuArray(resh_combinations)
-        results = Array(gpu_ten_constructor(cu_combs, func))
-        tensor = reshape(results, 1, ls_k, lj)
+        cu_combs, shape = product_to_cuarray(combinations)
+        array = Array(gpu_ten_constructor(cu_combs, func))
+        tensor = reshape(array, shape[2:end])
     end
 
     return tensor
 end
 
 function inverse_block(
-    i_k::Vector{Vector{Float64}},
-    j_k::Vector{Vector{Float64}},
+    i_k::Matrix{Float64},
+    j_k::Matrix{Float64},
     func::Function
 )
-    li = length(i_k)
-    lj = length(j_k)
-
-    combinations = product(i_k, j_k)
+    combinations = Base.product(eachcol(i_k), eachcol(j_k))
 
     if _backend == :cpu
         matrix = map((x) -> func(vcat(x...)), combinations)
     elseif _backend == :gpu
-        resh_combinations = stack([vcat(a..., b...) for (a, b) in vec(collect(combinations))])
-        cu_combs = CuArray(resh_combinations)
-        results = Array(gpu_ten_constructor(cu_combs, func))
-        matrix = reshape(results, li, lj)
+        cu_combs, shape = product_to_cuarray(combinations)
+        array = Array(gpu_ten_constructor(cu_combs, func))
+        tensor = reshape(array, shape[2:end])
     end
 
     # TODO Check if CUDA.reclaim() is needed to free up the memory on the gpu

@@ -1,6 +1,7 @@
 using Test
 include("../src/utils.jl")
 
+# TODO Adapt tests to Matrix structure instead of nested vectors.
 @testset "InterpolatingCrosses" begin
     @testset "constructor with n_var" begin
         using .Interpolators
