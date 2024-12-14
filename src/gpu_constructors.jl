@@ -22,16 +22,11 @@ function gpu_ten_constructor(combinations::CuArray, func)
     len = size(combinations)[2]
 
     output = CUDA.zeros(Float64, len)
-
-    println("Len: ", len)
     
     kern = @cuda launch=false tenconstr_kernel(combinations, output, func)
     config = launch_configuration(kern.fun)
     threads = min(len, config.threads)
     blocks = cld(len, threads)
-
-    println("Threads: ", threads)
-    println("Blocks: ", blocks)
 
     kern(combinations, output; threads = threads, blocks = blocks)
 
