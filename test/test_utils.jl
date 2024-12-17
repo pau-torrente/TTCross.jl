@@ -5,17 +5,22 @@ include("../src/utils.jl")
 @testset "InterpolatingCrosses" begin
     @testset "constructor with n_var" begin
         ic = InterpolatingCrosses(3)
-        @test all(x -> isa(x, AbstractMatrix) && size(x) == (0, 0), ic.calI)
-        @test all(x -> isa(x, AbstractMatrix) && size(x) == (0, 0), ic.calJ)
+        @test ic.n_var == 3
+        @testset "cross sizes" begin
+            for k in 1:ic.n_var-1
+                @test isa(ic.calI[k], AbstractMatrix) && size(ic.calI[k]) == (k, 0)
+                @test isa(ic.calJ[k], AbstractMatrix) && size(ic.calJ[k]) == (ic.n_var-k, 0)
+            end
+        end
         @test size(ic.calI)[1] == 2
         @test size(ic.calJ)[1] == 2
         @test ic.cross_sizes == [0, 0]
-        @test ic.n_var == 3
+        
     end
 
     # TODO Account for actual meaning of I and J (extremal cases, sizes, nestedness, etc.)
     @testset "constructor with calI and calJ" begin
-        calI = [[1. ; 2.], 
+        calI = [[1.  2.;], 
                 [1. 1. 2.; 
                  1. 2. 2.], 
                 [1. 1.;
@@ -28,14 +33,33 @@ include("../src/utils.jl")
                  3.  4.], 
                  [2.  2.  2.;
                  3.  5.  4.],
-                 [3.; 5.]
+                 [3. 5.;]
         ]
 
         ic = InterpolatingCrosses(calI, calJ)
-        @test ic.calI == [reshape([1. ; 2.], (1,2)), transpose([1. 1. ; 1. 2.; 2. 2.]), transpose([1. 2. 3.; 1. 2. 4.])]
-        @test ic.calJ == [transpose([1. 2. 3.; 1. 2. 4.]), transpose([2. 3.; 2. 5.; 2. 4.]), reshape([3.; 5.], (1, 2))]
+
+        @test ic.calI == [[1.  2.;], 
+                        [1. 1. 2.; 
+                        1. 2. 2.], 
+                        [1. 1.;
+                        2. 2.;
+                        3. 4.]
+                    ]
+        @test ic.calJ == [[1.  1.;
+                        2.  2.;
+                        3.  4.], 
+                        [2.  2.  2.;
+                        3.  5.  4.],
+                        [3. 5.;]
+                    ]
         @test ic.cross_sizes == [2, 3, 2]
         @test ic.n_var == 4
+    end
+
+    @testset "changing the index sets" begin
+        ic = InterpolatingCrosses(3)
+
+        newI = reshape([1])
     end
 end
 
