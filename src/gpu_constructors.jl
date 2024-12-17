@@ -1,5 +1,3 @@
-using CUDA
-
 #TODO Check what is going on with float types from and to the gpu
 function tenconstr_kernel(combinations::CuDeviceArray{Float32}, out::CuDeviceVector{Float32}, func)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
@@ -17,8 +15,7 @@ function tenconstr_kernel(combinations::CuDeviceArray{Float32}, out::CuDeviceVec
     return nothing
 end
 
-function gpu_ten_constructor(combinations::CuArray, func)
-    
+function gpu_ten_constructor(combinations::CuArray, func) 
     len = size(combinations)[2]
 
     output = CUDA.zeros(Float64, len)

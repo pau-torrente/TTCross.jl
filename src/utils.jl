@@ -45,6 +45,7 @@ mutable struct InterpolatingCrosses
     end
 end
 
+# TODO as is, these two methods add the index sets but then the cross_sizes variable does not make sense anymore
 function add_calI!(crosses::InterpolatingCrosses, position::Int, new_cross::T) where T <: AbstractMatrix
     if position <1 || position > crosses.n_var-1
         throw(BoundsError("Given position update is out of bound for the given crosses. Expected 1 ≤ $position ≤ $crosses.n_var"))
@@ -77,12 +78,14 @@ function add_crosses!(crosses::InterpolatingCrosses, position::Int, new_I::T, ne
     end
 
     if size(new_I)[2] != size(new_J)[2]
-        throw(ArgumentError("calI and calJ must must contain the same number of oindex set. Got $(size(new_I)[2]) != $(size(new_J)[2]) "))   
+        throw(ArgumentError("calI and calJ must must contain the same number of index sets. Got $(size(new_I)[2]) != $(size(new_J)[2]) "))   
     end  
 
     try
         crosses.calI[position] = hcat(crosses.calI[position], new_cross) 
-        crosses.calJ[position] = hcat(crosses.calJ[position], new_cross) 
+        crosses.calJ[position] = hcat(crosses.calJ[position], new_cross)
+        crosses.cross_sizes[position] += size(new_I)[2]
+
     catch e
         if isa(e, DimensionMismatch)
             throw(DimensionMismatch("New crosses do not have the right sizes.")) 

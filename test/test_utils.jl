@@ -1,6 +1,5 @@
 using Test
-include("../src/utils.jl")
-
+using TTcross
 # TODO Adapt tests to Matrix structure instead of nested vectors.
 @testset "InterpolatingCrosses" begin
     @testset "constructor with n_var" begin
@@ -55,12 +54,59 @@ include("../src/utils.jl")
         @test ic.cross_sizes == [2, 3, 2]
         @test ic.n_var == 4
     end
+end
 
-    @testset "changing the index sets" begin
-        ic = InterpolatingCrosses(3)
+@testset "Cross adding" begin
+    calI = [[1.  2.;], 
+            [1. 1. 2.; 
+                1. 2. 2.], 
+            [1. 1.;
+                2. 2.;
+                3. 4.]
+    ]
+    
+    calJ = [[1.  1.;
+                2.  2.;
+                3.  4.], 
+                [2.  2.  2.;
+                3.  5.  4.],
+                [3. 5.;]
+    ]
 
-        newI = reshape([1])
-    end
+    ic = InterpolatingCrosses(calI, calJ)
+    new_cross = [2. ;3. ; 5.;;]
+
+    @test_throws BoundsError add_calI!(ic, 4, new_cross)
+
+    add_calI!(ic, 3, new_cross)
+    @test ic.calI == [[1.  2.;], 
+                    [1. 1. 2.; 
+                    1. 2. 2.], 
+                    [1. 1. 2.;
+                    2. 2. 3.;
+                    3. 4. 5.]
+            ]
+
+    ic = InterpolatingCrosses(calI, calJ)
+    @test_throws DimensionMismatch add_calI!(ic, 2, new_cross)
+
+
+    @test_throws BoundsError add_calJ!(ic, 4, new_cross)
+
+    add_calJ!(ic, 1, new_cross)
+    @test ic.calJ == [[1.  1. 2.;
+                        2.  2. 3.;
+                        3.  4. 5.], 
+                        [2.  2.  2.;
+                        3.  5.  4.],
+                        [3. 5.;]
+                    ]   
+    
+    ic = InterpolatingCrosses(calI, calJ)
+    @test_throws DimensionMismatch add_calJ!(ic, 3, new_cross)
+
+
+    # TODO add here the tests for the I AND J adder
 end
 
 
