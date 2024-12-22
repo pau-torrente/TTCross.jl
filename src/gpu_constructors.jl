@@ -1,4 +1,4 @@
-#TODO Check what is going on with float types from and to the gpu
+#TODO Check what is going on with float types from and to the gpu -> Maybe only Float32 is supported, at least in my laptop
 function tenconstr_kernel(combinations::CuDeviceArray{Float32}, out::CuDeviceVector{Float32}, func)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
     if i <= size(combinations)[2]
